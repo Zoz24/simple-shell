@@ -8,25 +8,30 @@
 #define TOKEN_BUFSIZE 64
 #define TOKEN_DELIM " \t\r\n\a"
 
+// Function declarations
 int shell_cd(char **args);
 int shell_help(char **args);
 int shell_exit(char **args);
 
+// Array of built-in command strings
 char *builtin_str[] = {
     "cd",
     "help",
     "exit"};
 
+// Array of built-in command functions
 int (*builtin_func[])(char **) = {
     &shell_cd,
     &shell_help,
     &shell_exit};
 
+// Returns the number of built-in commands
 int count_builtins()
 {
     return sizeof(builtin_str) / sizeof(char *);
 }
 
+// Launches a new process to execute a command
 int shell_launch(char **args)
 {
     pid_t pid;
@@ -36,6 +41,7 @@ int shell_launch(char **args)
     pid = fork();
     if (pid == 0)
     {
+        // Child process
         if (execvp(args[0], args) == -1)
         {
             perror("shell: error executing command");
@@ -43,10 +49,12 @@ int shell_launch(char **args)
     }
     else if (pid < 0)
     {
+        // Error forking
         perror("shell: error forking");
     }
     else
     {
+        // Parent process
         do
         {
             wpid = waitpid(pid, &status, WUNTRACED);
@@ -61,6 +69,7 @@ int shell_launch(char **args)
     return 1;
 }
 
+// Built-in command: change directory
 int shell_cd(char **args)
 {
     if (args[1] == NULL)
@@ -77,6 +86,7 @@ int shell_cd(char **args)
     return 1;
 }
 
+// Built-in command: display help information
 int shell_help(char **args)
 {
     int i;
@@ -93,29 +103,35 @@ int shell_help(char **args)
     return 1;
 }
 
+// Built-in command: exit the shell
 int shell_exit(char **args)
 {
     return 0;
 }
 
+// Execute a command
 int shell_execute(char **args)
 {
     int i;
     if (args[0] == NULL)
     {
+        // Empty command
         return 1;
     }
     for (i = 0; i < count_builtins(); i++)
     {
         if (strcmp(args[0], builtin_str[i]) == 0)
         {
+            // Execute built-in command
             return (*builtin_func[i])(args);
         }
     }
 
+    // Launch external command
     return shell_launch(args);
 }
 
+// Read a line of input from the user
 char *read_line(void)
 {
     int buffer_size = LINE_BUFSIZE;
@@ -132,7 +148,11 @@ char *read_line(void)
     while (1)
     {
         ch = getchar();
-        if (ch == EOF || ch == '\n')
+        if (ch == EOF)
+        {
+            exit(EXIT_SUCCESS);
+        }
+        else if (ch == '\n')
         {
             buffer[position] = '\0';
             return buffer;
@@ -156,6 +176,7 @@ char *read_line(void)
     }
 }
 
+// Split a line into tokens
 char **split_lines(char *line)
 {
     int buffer_size = TOKEN_BUFSIZE;
@@ -185,12 +206,15 @@ char **split_lines(char *line)
                 exit(EXIT_FAILURE);
             }
         }
+
+        token = strtok(NULL, TOKEN_DELIM);
     }
 
     tokens[position] = NULL;
     return tokens;
 }
 
+// Main shell loop
 void shell_loop(void)
 {
     char *line;
@@ -209,6 +233,7 @@ void shell_loop(void)
     } while (status);
 }
 
+// Main function
 int main(int argc, char **argv)
 {
     shell_loop();
